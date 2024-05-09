@@ -15,6 +15,7 @@ networks:
 
 services:
   npm:
+    container_name: namex-proxy-manager
     image: 'jc21/nginx-proxy-manager:latest'
     restart: unless-stopped
     ports:
@@ -44,6 +45,7 @@ services:
     
 
   mariadb-npm:
+    container_name: mariadb-npm
     image: 'jc21/mariadb-aria:latest'
     restart: unless-stopped
     environment:
