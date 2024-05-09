@@ -1,0 +1,58 @@
+version: '3.8'
+
+name: nginx-proxy-manager
+
+volumes:
+  data-npm:
+  letsencrypt-npm:
+  mariadb-npm-data:
+
+
+networks:
+  nginx-proxy-manager_network:
+    external: true
+  backend:
+
+services:
+  npm:
+    image: 'jc21/nginx-proxy-manager:latest'
+    restart: unless-stopped
+    ports:
+      # These ports are in format <host-port>:<container-port>
+      - '80:80' # Public HTTP Port
+      - '443:443' # Public HTTPS Port
+      - '81:81' # Admin Web Port
+      # Add any other Stream port you want to expose
+      - '21:21' # FTP
+    environment:
+      # Mysql/Maria connection parameters:
+      DB_MYSQL_HOST: "mariadb-npm"
+      DB_MYSQL_PORT: 3306
+      DB_MYSQL_USER: "npm"
+      DB_MYSQL_PASSWORD: "npm"
+      DB_MYSQL_NAME: "npm"
+      # Uncomment tdata-npmhis if IPv6 is not enabled on your host
+      # DISABLE_IPV6: 'true'
+    volumes:
+      - data-npm:/data
+      - letsencrypt-npm:/etc/letsencrypt
+    depends_on:
+      - mariadb-npm
+    networks:
+      - backend
+      - nginx-proxy-manager_network
+    
+
+  mariadb-npm:
+    image: 'jc21/mariadb-aria:latest'
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: 'npm'
+      MYSQL_DATABASE: 'npm'
+      MYSQL_USER: 'npm'
+      MYSQL_PASSWORD: 'npm'
+      MARIADB_AUTO_UPGRADE: '1'
+    volumes:
+      - mariadb-npm-data:/var/lib/mysql
+    networks:
+      - backend

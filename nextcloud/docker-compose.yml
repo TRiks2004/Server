@@ -1,0 +1,88 @@
+version: '3.7'
+
+volumes:
+  nextcloud-html: 
+
+networks:
+  postgres_net:
+  redis_net:
+  nginx_net:
+
+
+services:
+
+  nginx:
+    restart: unless-stopped
+    image: nginx:latest
+    ports:
+    - 9080:80
+    - 9443:443
+    command: "/bin/sh -c 'while :; do sleep 6h & wait $${!}; nginx -s reload; done & nginx -g \"daemon off;\"'"
+    volumes:
+    - ./configs/nginx/conf.d:/etc/nginx/conf.d:ro
+    - ./configs/nginx/certbot:/etc/nginx/certbot:ro
+    - ./configs/certbot/conf:/etc/letsencrypt:rw
+    - ./configs/certbot/www:/var/www/certbot:rw
+    
+    - ./nextcloud:/var/www/html:ro
+    
+    - ./logs/nginx:/var/log/nginx
+    networks:
+      - nginx_net
+
+  certbot:
+    restart: unless-stopped
+    image: certbot/certbot:latest
+    entrypoint: "/bin/sh -c 'trap exit TERM; while :; do certbot renew; sleep 12h & wait $${!}; done;'"
+    volumes:
+    - /etc/localtime:/etc/localtime:ro
+    - ./configs/certbot/conf:/etc/letsencrypt:rw
+    - ./configs/certbot/www:/var/www/certbot:rw
+
+    networks:
+      - nginx_net
+
+  nextcloud:
+    restart: unless-stopped
+    image: nextcloud:fpm-alpine
+    ports:
+    - "127.0.0.1:9000:9000"
+    volumes:
+    - ./nextcloud:/var/www/html:rw
+    environment:
+      - REDIS_HOST=redis
+      - POSTGRES_HOST=postgres
+      - POSTGRES_PASSWORD=nextcloud
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=nextcloud
+    networks:
+      - redis_net
+      - nginx_net
+      - postgres_net
+
+
+  postgres:
+    container_name: postgres-nextcloud
+    image: postgres:alpine
+    environment:
+      - POSTGRES_PASSWORD=nextcloud
+      - POSTGRES_DB=nextcloud
+      - POSTGRES_USER=nextcloud
+    restart: unless-stopped
+    volumes:
+      - ./database/postgres/data:/var/lib/postgresql/data
+    networks:
+      - postgres_net
+    expose:
+      - "5432"
+
+  redis:
+    container_name: redis-nextcloud
+    image: redis:alpine
+    restart: unless-stopped
+    networks:
+      - redis_net
+    expose:
+      - "6379"
+    volumes:
+      - ./database/redis/data:/data
