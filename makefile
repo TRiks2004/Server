@@ -9,18 +9,19 @@ network-check:
 	@echo "Проверка сети $(network)..."
 	@if ! sudo docker network inspect $(network) > /dev/null 2>&1; then \
 		echo "Сеть $(network) не найдена. Создание сети..."; \
-		network network=$(network); \
+		make network-create network=$(network); \
 	else \
 		echo "Сеть $(network) уже существует."; \
 	fi
 
-npm-network-check:
-	make check-network network="nginx-proxy-manager_network"
+frontend-network-check:
+	make network-check network="frontend-global_network"
 
+backend-network-check:
+	make network-check network="backend-global_network"
 # ------------------------------------------------------------------------------
 
-container-up:
-	make npm-network-check
+container-up: frontend-network-check backend-network-check
 	sudo docker compose -f ./$(path_dir)/docker-compose.yml up -d
 
 container-down:
@@ -31,6 +32,9 @@ container-restart:
 
 container-ps:
 	sudo docker compose -f ./$(path_dir)/docker-compose.yml ps
+
+container-config:
+	sudo docker compose -f ./$(path_dir)/docker-compose.yml config
 
 name-dir-echo:
 	@echo $(path_dir)
@@ -51,6 +55,9 @@ nextcloud-restart:
 nextcloud-ps:
 	make container-ps path_dir=$(nextcloud)
 
+nextcloud-config:
+	make container-config path_dir=$(nextcloud)
+
 nextcloud-echo-name-dir:
 	make name-dir-echo path_dir=$(nextcloud)
 
@@ -70,8 +77,34 @@ npm-restart:
 npm-ps:
 	make container-ps path_dir=$(npm)
 
+npm-config:
+	make container-config path_dir=$(npm)
+
 npm-echo-name-dir:
 	make name-dir-echo path_dir=$(npm)
+
+# ==============================================================================
+
+postgresCursovik := "postgresCursovik"
+
+postgresCursovik-up:
+	make container-up path_dir=$(postgresCursovik)
+
+postgresCursovik-down:
+	make container-down path_dir=$(postgresCursovik)
+
+postgresCursovik-restart:
+	make container-restart path_dir=$(postgresCursovik)		
+
+postgresCursovik-config:
+	make container-config path_dir=$(postgresCursovik)
+
+postgresCursovik-md5-password:
+	echo "md5"&(echo -n '$(password)$(user)' | md5sum | awk '{print $1}')
+
+
+postgresCursovik-ps:
+	make container-ps path_dir=$(postgresCursovik)
 
 # ==============================================================================
 
@@ -79,4 +112,4 @@ all-up: npm-up nextcloud-up
 all-down: npm-down nextcloud-down
 all-restart: npm-restart nextcloud-restart
 
-all-echo-name-dir: npm-echo-name-dir nextcloud-echo-name-dir
+all-echo-name-dir: npm-echo-name-dir nextcloud-echo-name-dir postgresCursovik-ps

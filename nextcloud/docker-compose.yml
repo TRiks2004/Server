@@ -8,9 +8,11 @@ volumes:
   nextcloud-cache:
 
 networks:
-  nginx-proxy-manager_network:
+  frontend-global_network:
     external: true
-  backend:
+  backend-global_network:
+    external: true
+  nextcloud_network:
 
 services:
   nextcloud:
@@ -25,8 +27,8 @@ services:
       - POSTGRES_DB=nextcloud
       - POSTGRES_USER=nextcloud
     networks:
-      - nginx-proxy-manager_network
-      - backend
+      - frontend-global_network
+      - nextcloud_network
     expose:
       - "80"
 
@@ -41,7 +43,7 @@ services:
     volumes:
       - nextcloud-db:/var/lib/postgresql/data
     networks:
-      - backend
+      - nextcloud_network
     expose:
       - "5432"
 
@@ -50,7 +52,7 @@ services:
     image: redis:alpine
     restart: unless-stopped
     networks:
-      - backend
+      - nextcloud_network
     expose:
       - "6379"
     volumes:

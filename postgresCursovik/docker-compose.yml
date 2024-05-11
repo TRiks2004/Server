@@ -1,0 +1,93 @@
+version: "3.9"
+
+name: postgres_cursovik
+
+networks:
+  frontend-global_network:
+    external: true
+
+  backend-global_network:
+    external: true
+
+  postgres_cursovik_network:
+
+
+volumes:
+  postgres-data:
+  pgadmin-data:
+
+
+configs:
+  postgresql_conf:
+    file: ./postgresql.conf
+
+  postgres_exporter_config:
+    file: ./queries.yaml
+
+  pgbouncer_config:
+    file: ./pgbouncer/pgbouncer.ini
+  
+  pgbouncer_userlist:
+    file: ./pgbouncer/userlist.txt
+
+services:
+  postgres:
+    container_name: postgres_cursovik
+    image: postgres:16.3-alpine3.18
+    environment:
+      POSTGRES_DB: ${POSTGRES_DB:-exampledb}
+      POSTGRES_USER: ${POSTGRES_USER:-exampleuser}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-examplepassword}
+      PGDATA: "/var/lib/postgresql/data/pgdata"
+    configs:
+      - source: postgresql_conf
+        target: /etc/postgresql.conf
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    expose:
+      - 5432
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ", "${POSTGRES_USER:-exampleuser}" ," -d ", "${POSTGRES_DB:-exampledb}"]
+      interval: 30s
+      timeout: 5s
+      retries: 5
+      start_period: 60s
+    networks:
+      - backend-global_network
+      - postgres_cursovik_network
+
+  postgres_exporter:
+    container_name: postgres_cursovik_exporter
+    image: prometheuscommunity/postgres-exporter:v0.15.0
+    environment:
+      DATA_SOURCE_URI: "postgres:5432/${POSTGRES_DB:-exampledb}?sslmode=disable"
+      DATA_SOURCE_USER: ${POSTGRES_USER:-exampleuser}
+      DATA_SOURCE_PASS: ${POSTGRES_PASSWORD:-examplepassword}
+      PG_EXPORTER_EXTEND_QUERY_PATH: "/etc/postgres_exporter/queries.yaml"
+    ports:
+      - "9187:9187" # TODO: убрать внешний доступ оставить только внутренний
+    configs:
+      - source: postgres_exporter_config
+        target: /etc/postgres_exporter/queries.yaml
+    restart: unless-stopped
+    networks:
+      - postgres_cursovik_network
+      - backend-global_network
+    depends_on:
+      - postgres
+    
+  pgbouncer:
+    image: edoburu/pgbouncer
+    configs:
+      - source: pgbouncer_config
+        target: /etc/pgbouncer/pgbouncer.ini
+      - source: pgbouncer_userlist
+        target: /etc/pgbouncer/userlist.txt
+    ports:
+      - 6431:6432
+    networks:
+      - postgres_cursovik_network
+      - frontend-global_network
+    depends_on:
+      - postgres
