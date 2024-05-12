@@ -113,3 +113,8 @@ all-down: npm-down nextcloud-down
 all-restart: npm-restart nextcloud-restart
 
 all-echo-name-dir: npm-echo-name-dir nextcloud-echo-name-dir postgresCursovik-ps
+
+# ==============================================================================
+
+create-token:
+	openssl rand -base64 48
