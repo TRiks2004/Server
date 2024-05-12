@@ -16,9 +16,6 @@ services:
      - 4987:80
     volumes:
      - vaultwarden-data:/data:rw
-    environment:
-     - WEBSOCKET_ENABLED=true
-     - SIGNUPS_ALLOWED=false
     networks:
       - frontend-global_network
 
