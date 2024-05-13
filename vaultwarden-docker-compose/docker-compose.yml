@@ -16,6 +16,8 @@ services:
      - 4987:80
     volumes:
      - vaultwarden-data:/data:rw
+    environment:
+      - DOMAIN=https://getter.xn--n1afb.site
     networks:
       - frontend-global_network
 
