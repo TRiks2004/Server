@@ -16,6 +16,7 @@ networks:
 
 services:
   nextcloud:
+    container_name: nextcloud
     image: nextcloud
     restart: always
     volumes:

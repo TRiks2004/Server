@@ -1,0 +1,36 @@
+version: '3.8'
+
+name: portainer
+
+volumes:
+  portainer-data:
+
+networks:
+  frontend-global_network:
+    external: true
+  backend-global_network:
+    external: true
+  portainer_network:
+
+services:
+  portainer:
+    container_name: portainer
+    image: portainer/portainer-ce:2.20.2
+    restart: unless-stopped
+    ports:
+      - 6749:8000
+      - 6750:9443
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock 
+      - portainer-data:/data
+    environment:
+      - TZ=Europe/Moscow
+    networks:
+      - frontend-global_network
+      - backend-global_network
+    healthcheck:
+      test: ["CMD", "curl", "-f", "https://localhost:9443"]
+      interval: 1m
+      timeout: 10s
+      retries: 3
+      start_period: 30s

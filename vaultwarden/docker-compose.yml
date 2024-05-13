@@ -12,20 +12,13 @@ services:
     image: vaultwarden/server:latest
     container_name: vaultwarden
     restart: unless-stopped
-    ports:
-     - 4987:80
+    expose:
+      - 80
     volumes:
      - vaultwarden-data:/data:rw
     environment:
       - WEBSOCKET_ENABLED=true
-      ##change to false once create the admin account
       - SIGNUPS_ALLOWED=true 
       - TZ=Europe/Moscow
     networks:
       - frontend-global_network
-
-#uncomment below network part if you are using Nginx Proxy Manager, or you can remove the same
-#networks:
-#  default:
-#    external:
-#      name: nginx-proxy-network
