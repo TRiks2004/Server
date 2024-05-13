@@ -17,7 +17,10 @@ services:
     volumes:
      - vaultwarden-data:/data:rw
     environment:
-      - DOMAIN=https://getter.xn--n1afb.site
+      - WEBSOCKET_ENABLED=true
+      ##change to false once create the admin account
+      - SIGNUPS_ALLOWED=true 
+      - TZ=Europe/Moscow
     networks:
       - frontend-global_network
 
